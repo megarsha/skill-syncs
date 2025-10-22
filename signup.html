@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Skill Sync</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0A1128;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0A1128;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4A90E2, #8B5CF6);
+            border-radius: 5px;
+        }
+        
+        .glass-card {
+            background: rgba(17, 27, 71, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .decorative-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .circle-1 {
+            width: 500px;
+            height: 500px;
+            right: -100px;
+            bottom: -100px;
+        }
+        
+        .circle-2 {
+            width: 350px;
+            height: 350px;
+            right: 50px;
+            top: 50px;
+        }
+        
+        .testimonial-card {
+            animation: float 6s ease-in-out infinite;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .testimonial-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .testimonial-card:nth-child(2) { animation-delay: 1s; }
+        .testimonial-card:nth-child(3) { animation-delay: 2s; }
+        .testimonial-card:nth-child(4) { animation-delay: 3s; }
+        
+        button, a, input, select {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="min-h-screen flex">
+        <!-- Left Side - Signup Form -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-[#0A1128]">
+            <div class="w-full max-w-md">
+                <!-- Logo -->
+                <div class="mb-10">
+                    <div class="flex items-center gap-2">
+                        <div class="relative w-10 h-10">
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl rotate-6"></div>
+                            <div class="absolute inset-1 bg-[#0A1128] rounded-lg rotate-6"></div>
+                            <div class="absolute inset-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-md rotate-6"></div>
+                        </div>
+                        <span class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Skill Sync</span>
+                    </div>
+                </div>
+                
+                <!-- Heading -->
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mb-2">Create your account</h1>
+                    <p class="text-sm text-gray-400">Start collaborating with talented students today</p>
+                </div>
+                
+                <!-- Signup Form -->
+                <form id="signup-form" class="space-y-6">
+                    <!-- Name -->
+                    <div>
+                        <label for="name" class="block text-sm font-semibold text-white mb-3">Name</label>
+                        <div class="relative">
+                            <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input 
+                                type="text" 
+                                id="name" 
+                                placeholder="Enter name" 
+                                class="w-full h-14 pl-12 pr-4 glass-card rounded-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- Phone -->
+                    <div>
+                        <label for="signup-phone" class="block text-sm font-semibold text-white mb-3">Phone Number</label>
+                        <div class="flex gap-0">
+                            <div class="relative">
+                                <select id="signup-country-code" class="h-14 pl-4 pr-10 glass-card rounded-l-xl text-base text-white appearance-none cursor-pointer">
+                                    <option value="+91">+91</option>
+                                    <option value="+1">+1</option>
+                                    <option value="+44">+44</option>
+                                </select>
+                                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+                            </div>
+                            <input 
+                                type="tel" 
+                                id="signup-phone" 
+                                placeholder="Enter Phone No." 
+                                maxlength="10"
+                                class="flex-1 h-14 px-4 glass-card rounded-r-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <div id="recaptcha-signup-container"></div>
+                    
+                    <!-- Terms -->
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" id="terms" class="mt-1 w-4 h-4 cursor-pointer" required>
+                        <label for="terms" class="text-xs text-gray-400">
+                            By clicking 'Create Account', you agree to our 
+                            <a href="#" class="text-blue-400 hover:text-blue-300">Terms & Conditions</a>
+                        </label>
+                    </div>
+                    
+                    <!-- Signup Button -->
+                    <button 
+                        type="submit" 
+                        id="signup-btn"
+                        class="w-full h-14 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-base font-semibold rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all shadow-xl"
+                    >
+                        Create Account
+                    </button>
+                </form>
+                
+                <!-- Login Link -->
+                <div class="text-center mt-7">
+                    <p class="text-sm text-gray-400">
+                        Already have an account? 
+                        <a href="login.html" class="text-blue-400 font-semibold hover:text-blue-300">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side - Same as login -->
+        <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 relative overflow-hidden">
+            <div class="decorative-circle circle-1"></div>
+            <div class="decorative-circle circle-2"></div>
+            
+            <div class="w-full h-full flex flex-col justify-start pt-16 px-10 relative z-10">
+                <div class="mb-6">
+                    <h2 class="text-white text-4xl font-bold mb-3">Success Stories</h2>
+                    <p class="text-white text-base opacity-90">2,500+ students connected</p>
+                </div>
+                
+                <div class="flex gap-2 mb-10">
+                    <div class="w-10 h-2 rounded-full bg-white"></div>
+                    <div class="w-2 h-2 rounded-full bg-white opacity-40"></div>
+                    <div class="w-2 h-2 rounded-full bg-white opacity-40"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="testimonial-card bg-white rounded-xl p-5 shadow-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" class="w-11 h-11 rounded-full">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Rahul Sharma</h3>
+                                <p class="text-xs text-gray-600">React Developer</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-700">Found my perfect backend partner!</p>
+                    </div>
+                    
+                    <div class="testimonial-card bg-white rounded-xl p-5 shadow-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="https://randomuser.me/api/portraits/women/44.jpg" class="w-11 h-11 rounded-full">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Priya Reddy</h3>
+                                <p class="text-xs text-gray-600">UI/UX Designer</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-700">Our project won the hackathon!</p>
+                    </div>
+                    
+                    <div class="testimonial-card bg-white rounded-xl p-5 shadow-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="https://randomuser.me/api/portraits/men/45.jpg" class="w-11 h-11 rounded-full">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Arjun Patel</h3>
+                                <p class="text-xs text-gray-600">Backend Developer</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-700">Building something amazing!</p>
+                    </div>
+                    
+                    <div class="testimonial-card bg-white rounded-xl p-5 shadow-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="https://randomuser.me/api/portraits/women/65.jpg" class="w-11 h-11 rounded-full">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Sneha Kumar</h3>
+                                <p class="text-xs text-gray-600">Full Stack</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-700">Best platform for collaboration!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="auth.js"></script>
+</body>
+</html>

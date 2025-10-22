@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login to Skill Sync - Find Your Perfect Project Partner">
+    <title>Login - Skill Sync</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0A1128;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0A1128;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4A90E2, #8B5CF6);
+            border-radius: 5px;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4A90E2 0%, #00D9FF 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 20px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Success overlay */
+        .success-overlay {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+        }
+        
+        .checkmark-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid white;
+            position: relative;
+            animation: scaleIn 0.5s ease-in-out;
+        }
+        
+        @keyframes scaleIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .checkmark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .checkmark-stem {
+            position: absolute;
+            width: 4px;
+            height: 25px;
+            background-color: white;
+            left: 16px;
+            top: 10px;
+            transform: rotate(45deg);
+            animation: checkStem 0.3s ease-in-out 0.3s forwards;
+            transform-origin: bottom;
+            opacity: 0;
+        }
+        
+        .checkmark-kick {
+            position: absolute;
+            width: 16px;
+            height: 4px;
+            background-color: white;
+            left: 4px;
+            top: 28px;
+            transform: rotate(-45deg);
+            animation: checkKick 0.3s ease-in-out 0.5s forwards;
+            transform-origin: right;
+            opacity: 0;
+        }
+        
+        @keyframes checkStem {
+            to {
+                opacity: 1;
+                transform: rotate(45deg) scaleY(1);
+            }
+        }
+        
+        @keyframes checkKick {
+            to {
+                opacity: 1;
+                transform: rotate(-45deg) scaleX(1);
+            }
+        }
+        
+        /* Decorative elements */
+        .decorative-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .circle-1 {
+            width: 500px;
+            height: 500px;
+            right: -100px;
+            bottom: -100px;
+        }
+        
+        .circle-2 {
+            width: 350px;
+            height: 350px;
+            right: 50px;
+            top: 50px;
+        }
+        
+        /* Testimonial animations */
+        .testimonial-card {
+            animation: float 6s ease-in-out infinite;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .testimonial-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .testimonial-card:nth-child(2) { animation-delay: 1s; }
+        .testimonial-card:nth-child(3) { animation-delay: 2s; }
+        .testimonial-card:nth-child(4) { animation-delay: 3s; }
+        
+        /* Glass effect */
+        .glass-card {
+            background: rgba(17, 27, 71, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        button, a, input, select {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Signing you in...</div>
+    </div>
+    
+    <!-- Success Overlay -->
+    <div id="success-overlay" class="loading-overlay success-overlay">
+        <div class="checkmark-circle">
+            <div class="checkmark">
+                <div class="checkmark-stem"></div>
+                <div class="checkmark-kick"></div>
+            </div>
+        </div>
+        <div class="loading-text">Login Successful!</div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="min-h-screen flex">
+        <!-- Left Side - Login Form -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-[#0A1128]">
+            <div class="w-full max-w-md">
+                <!-- Logo -->
+                <div class="mb-10 lg:mb-12">
+                    <div class="flex items-center gap-2">
+                        <div class="relative w-10 h-10">
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl rotate-6"></div>
+                            <div class="absolute inset-1 bg-[#0A1128] rounded-lg rotate-6"></div>
+                            <div class="absolute inset-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-md rotate-6"></div>
+                        </div>
+                        <span class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Skill Sync</span>
+                    </div>
+                </div>
+                
+                <!-- Welcome Text -->
+                <div class="mb-8">
+                    <h2 class="text-sm text-gray-400 mb-2 font-normal">Welcome back</h2>
+                    <h1 class="text-3xl lg:text-4xl font-bold text-white leading-tight mb-2">Login to Skill Sync</h1>
+                    <p class="text-sm text-gray-400">Find teammates with complementary skills</p>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="phone-login-form" class="space-y-6">
+                    <div>
+                        <label for="phone" class="block text-sm font-semibold text-white mb-3">Phone Number</label>
+                        <div class="flex gap-0">
+                            <div class="relative">
+                                <select id="country-code" class="h-14 pl-4 pr-10 glass-card border-r-0 rounded-l-xl text-base font-medium text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 transition-all">
+                                    <option value="+91">+91</option>
+                                    <option value="+1">+1</option>
+                                    <option value="+44">+44</option>
+                                </select>
+                                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+                            </div>
+                            
+                            <input 
+                                type="tel" 
+                                id="phone" 
+                                placeholder="Enter Phone No." 
+                                maxlength="10"
+                                class="flex-1 h-14 px-4 glass-card rounded-r-xl text-base text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- reCAPTCHA -->
+                    <div id="recaptcha-container"></div>
+                    
+                    <!-- Login Button -->
+                    <button 
+                        type="submit" 
+                        id="send-otp-btn"
+                        class="w-full h-14 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-base font-semibold rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all shadow-xl hover:shadow-2xl"
+                    >
+                        Login
+                    </button>
+                </form>
+                
+                <!-- Divider -->
+                <div class="flex items-center gap-4 my-7">
+                    <div class="flex-1 h-px bg-gray-700"></div>
+                    <span class="text-xs text-gray-500 font-medium">OR</span>
+                    <div class="flex-1 h-px bg-gray-700"></div>
+                </div>
+                
+                <!-- Google Login -->
+                <div class="mb-8">
+                    <p class="text-sm text-gray-400 font-normal mb-4">Login With</p>
+                    <button 
+                        id="google-login-btn"
+                        class="w-full h-14 flex items-center justify-center gap-3 glass-card rounded-xl text-sm font-semibold text-white hover:bg-white/10 transition-all uppercase"
+                    >
+                        <svg class="w-5 h-5" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        GOOGLE
+                    </button>
+                </div>
+                
+                <!-- Create Account Link -->
+                <div class="text-center">
+                    <p class="text-sm text-gray-400">
+                        Don't have an account? 
+                        <a href="signup.html" class="text-blue-400 font-semibold hover:text-blue-300 transition-all">Create new account</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side - Success Stories -->
+        <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 relative overflow-hidden">
+            <div class="decorative-circle circle-1"></div>
+            <div class="decorative-circle circle-2"></div>
+            
+            <div class="w-full h-full flex flex-col justify-start pt-16 px-10 relative z-10">
+                <div class="mb-6">
+                    <h2 class="text-white text-4xl font-bold mb-3 leading-tight">Success Stories</h2>
+                    <p class="text-white text-base font-normal opacity-90">2,500+ students connected and collaborating</p>
+                </div>
+                
+                <div class="flex gap-2 mb-10">
+                    <div class="w-10 h-2 rounded-full bg-white"></div>
+                    <div class="w-2 h-2 rounded-full bg-white opacity-40"></div>
+                    <div class="w-2 h-2 rounded-full bg-white opacity-40"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="testimonial-card bg-white rounded-xl p-5 shadow-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Student" class="w-11 h-11 rounded-full object-cover">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Rahul Sharma</h3>
+                                <p class="text-xs text-gray-600">React Developer</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-700 leading-relaxed">
+                            Found my perfect backend partner through Skill Sync. Built an amazing e-commerce app together!
+                        </p>
+                    </div>
+                    
+                    <div class="testimonial-card bg-white rounded-xl p-5 shadow-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Student" class="w-11 h-11 rounded-full object-cover">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Priya Reddy</h3>
+                                <p class="text-xs text-gray-600">UI/UX Designer</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-700 leading-relaxed">
+                            Skill Sync helped me connect with talented developers. Our project won the hackathon!
+                        </p>
+                    </div>
+                    
+                    <div class="testimonial-card bg-white rounded-xl p-5 shadow-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Student" class="w-11 h-11 rounded-full object-cover">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Arjun Patel</h3>
+                                <p class="text-xs text-gray-600">Backend Developer</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-700 leading-relaxed">
+                            Finally found teammates with the right skills. We're building something amazing!
+                        </p>
+                    </div>
+                    
+                    <div class="testimonial-card bg-white rounded-xl p-5 shadow-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="Student" class="w-11 h-11 rounded-full object-cover">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Sneha Kumar</h3>
+                                <p class="text-xs text-gray-600">Full Stack Developer</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-700 leading-relaxed">
+                            Best platform for student collaboration. Connected with amazing people!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="auth.js"></script>
+</body>
+</html>

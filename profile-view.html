@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Skill Sync</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0A1128;
+            color: #E5E7EB;
+            overflow-x: hidden;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0A1128;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4A90E2, #8B5CF6);
+            border-radius: 5px;
+        }
+        
+        /* Glass Effect */
+        .glass-card {
+            background: rgba(17, 27, 71, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Profile Gradient */
+        .profile-gradient {
+            background: linear-gradient(135deg, #4A90E2 0%, #8B5CF6 50%, #00D9FF 100%);
+        }
+        
+        /* Hover Effects */
+        .hover-scale {
+            transition: all 0.3s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Skill Tags */
+        .skill-tag {
+            display: inline-block;
+            background: rgba(74, 144, 226, 0.2);
+            color: #4A90E2;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .skill-tag:hover {
+            background: #4A90E2;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        
+        /* Social Links */
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .social-link:hover {
+            background: rgba(74, 144, 226, 0.2);
+            transform: translateX(5px);
+            border-color: rgba(74, 144, 226, 0.3);
+        }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: #111B47;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+        
+        button, a {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Header -->
+    <header class="bg-[#0A1128]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="search.html" class="flex items-center gap-2 text-gray-400 hover:text-white transition-all">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="hidden sm:inline">Back to Search</span>
+                </a>
+                
+                <a href="dashboard.html" class="flex items-center gap-2">
+                    <div class="relative w-8 h-8">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg rotate-6"></div>
+                        <div class="absolute inset-0.5 bg-[#0A1128] rounded-md rotate-6"></div>
+                        <div class="absolute inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-sm rotate-6"></div>
+                    </div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent hidden sm:block">Skill Sync</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 lg:px-8 py-8">
+        
+        <!-- Profile Header Card -->
+        <div class="glass-card rounded-2xl shadow-2xl overflow-hidden mb-6">
+            <!-- Cover Banner -->
+            <div class="profile-gradient h-32 sm:h-40"></div>
+            
+            <!-- Profile Info -->
+            <div class="px-6 sm:px-8 pb-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-16 sm:-mt-20">
+                    <!-- Profile Photo -->
+                    <img id="profile-photo" src="https://ui-avatars.com/api/?name=User&background=4A90E2&color=fff" alt="Profile" class="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl object-cover border-4 border-[#0A1128] shadow-2xl">
+                    
+                    <div class="flex-1 w-full">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
+                            <div>
+                                <h1 id="user-name" class="text-2xl sm:text-3xl font-bold text-white mb-1">Loading...</h1>
+                                <p id="user-institution" class="text-gray-400 text-sm sm:text-base mb-2">Student</p>
+                                <div id="connection-status-badge" class="inline-block"></div>
+                            </div>
+                            
+                            <!-- Action Button -->
+                            <div id="action-button-container" class="w-full sm:w-auto">
+                                <!-- Button will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bio Section -->
+        <div id="bio-section" class="glass-card rounded-2xl p-6 mb-6 hidden">
+            <h2 class="text-xl font-bold text-white mb-3 flex items-center gap-2">
+                <i class="fas fa-info-circle text-blue-400"></i>
+                About
+            </h2>
+            <p id="user-bio" class="text-gray-300 leading-relaxed"></p>
+        </div>
+        
+        <!-- Skills Section -->
+        <div id="skills-section" class="glass-card rounded-2xl p-6 mb-6">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fas fa-code text-blue-400"></i>
+                Skills
+            </h2>
+            <div id="skills-container" class="flex flex-wrap gap-3">
+                <!-- Skills will be inserted here -->
+            </div>
+        </div>
+        
+        <!-- Contact Information (Visible only for connections) -->
+        <div id="contact-section" class="glass-card rounded-2xl p-6 mb-6 border-2 border-green-500/30 hidden relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-green-600/10 to-emerald-600/10"></div>
+            
+            <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                    <h2 class="text-xl font-bold text-white">Contact Information</h2>
+                </div>
+                <p class="text-sm text-gray-400 mb-4">You're connected! Here's how to reach out:</p>
+                
+                <div class="space-y-3" id="contact-info">
+                    <!-- Contact info will be inserted here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Social Links -->
+        <div id="social-section" class="glass-card rounded-2xl p-6 hidden">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fas fa-link text-blue-400"></i>
+                Social Links
+            </h2>
+            <div class="space-y-3" id="social-links-container">
+                <!-- Social links will be inserted here -->
+            </div>
+        </div>
+        
+    </main>
+    
+    <!-- Connection Request Modal -->
+    <div id="connection-modal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Send Connection Request</h3>
+                <button id="close-modal" class="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition-all">
+                    <i class="fas fa-times text-gray-400"></i>
+                </button>
+            </div>
+            
+            <p class="text-sm text-gray-400 mb-4">Add a message to introduce yourself (optional)</p>
+            
+            <textarea 
+                id="connection-message" 
+                rows="4" 
+                placeholder="Hi! I'm working on a project and need someone with your skills. Would love to collaborate!"
+                maxlength="300"
+                class="w-full px-4 py-3 glass-card rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+            ></textarea>
+            <p class="text-xs text-gray-500 mb-6"><span id="message-count">0</span>/300 characters</p>
+            
+            <div class="flex gap-3">
+                <button id="cancel-btn" class="flex-1 px-6 py-3 glass-card text-gray-300 rounded-lg font-semibold hover:bg-white/10 transition-all">
+                    Cancel
+                </button>
+                <button id="send-request-btn" class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-xl">
+                    <i class="fas fa-paper-plane mr-2"></i>Send Request
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="profile-view.js"></script>
+    
+    <script>
+        // Basic modal functionality
+        const modal = document.getElementById('connection-modal');
+        const closeModal = document.getElementById('close-modal');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const messageTextarea = document.getElementById('connection-message');
+        const messageCount = document.getElementById('message-count');
+        
+        // Close modal
+        if (closeModal) {
+            closeModal.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+        }
+        
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+        
+        // Character count
+        if (messageTextarea) {
+            messageTextarea.addEventListener('input', () => {
+                messageCount.textContent = messageTextarea.value.length;
+            });
+        }
+        
+        console.log('👤 Profile view page loaded');
+    </script>
+</body>
+</html>

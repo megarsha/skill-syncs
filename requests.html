@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Requests - Skill Sync</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0A1128;
+            color: #E5E7EB;
+            overflow-x: hidden;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0A1128;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4A90E2, #8B5CF6);
+            border-radius: 5px;
+        }
+        
+        /* Glass Effect */
+        .glass-card {
+            background: rgba(17, 27, 71, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Request Card Hover */
+        .request-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .request-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(74, 144, 226, 0.3);
+        }
+        
+        /* Skill Tags */
+        .skill-tag {
+            display: inline-block;
+            background: rgba(74, 144, 226, 0.2);
+            color: #4A90E2;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
+        /* Tab Active State */
+        .tab-active {
+            color: #4A90E2;
+            border-bottom: 2px solid #4A90E2;
+        }
+        
+        button, a {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Header -->
+    <header class="bg-[#0A1128]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="dashboard.html" class="flex items-center gap-2">
+                    <div class="relative w-8 h-8">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg rotate-6"></div>
+                        <div class="absolute inset-0.5 bg-[#0A1128] rounded-md rotate-6"></div>
+                        <div class="absolute inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-sm rotate-6"></div>
+                    </div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Skill Sync</span>
+                </a>
+                
+                <a href="dashboard.html" class="text-gray-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="hidden sm:inline">Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 lg:px-8 py-8">
+        
+        <!-- Page Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-white mb-2">Pending Connection Requests</h1>
+            <p class="text-gray-400">Review and respond to connection requests from other students</p>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <!-- Pending Requests -->
+            <div class="glass-card rounded-2xl p-5">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-xl">
+                        <i class="fas fa-inbox text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-white" id="pending-count">0</p>
+                        <p class="text-sm text-gray-400">Pending Requests</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sent Requests -->
+            <div class="glass-card rounded-2xl p-5">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-xl">
+                        <i class="fas fa-paper-plane text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-white" id="sent-count">0</p>
+                        <p class="text-sm text-gray-400">Sent Requests</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="mb-6">
+            <div class="flex gap-0 border-b border-white/10">
+                <button id="received-tab" class="px-6 py-3 text-sm font-semibold text-blue-400 border-b-2 border-blue-500 transition-all">
+                    Received
+                </button>
+                <button id="sent-tab" class="px-6 py-3 text-sm font-semibold text-gray-400 hover:text-white transition-all border-b-2 border-transparent">
+                    Sent
+                </button>
+            </div>
+        </div>
+        
+        <!-- Received Requests Section -->
+        <div id="received-section">
+            <div id="received-requests" class="space-y-4">
+                <!-- Request cards will be inserted here dynamically -->
+            </div>
+            
+            <!-- No Received Requests -->
+            <div id="no-received" class="hidden text-center py-20">
+                <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-inbox text-gray-600 text-6xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-3">No pending requests</h3>
+                <p class="text-gray-400 max-w-md mx-auto">You'll see connection requests from other students here when they want to collaborate with you</p>
+            </div>
+        </div>
+        
+        <!-- Sent Requests Section -->
+        <div id="sent-section" class="hidden">
+            <div id="sent-requests" class="space-y-4">
+                <!-- Request cards will be inserted here dynamically -->
+            </div>
+            
+            <!-- No Sent Requests -->
+            <div id="no-sent" class="hidden text-center py-20">
+                <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-paper-plane text-gray-600 text-6xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-3">No sent requests</h3>
+                <p class="text-gray-400 max-w-md mx-auto mb-8">Start searching for teammates to send connection requests and build your network</p>
+                <a href="search.html" class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-xl">
+                    <i class="fas fa-search"></i>
+                    Search Students
+                </a>
+            </div>
+        </div>
+        
+    </main>
+    
+    <script src="requests.js"></script>
+    
+    <script>
+        // Tab switching functionality
+        const receivedTab = document.getElementById('received-tab');
+        const sentTab = document.getElementById('sent-tab');
+        const receivedSection = document.getElementById('received-section');
+        const sentSection = document.getElementById('sent-section');
+        
+        receivedTab.addEventListener('click', () => {
+            // Update tabs
+            receivedTab.classList.add('text-blue-400', 'border-blue-500');
+            receivedTab.classList.remove('text-gray-400', 'border-transparent');
+            sentTab.classList.add('text-gray-400', 'border-transparent');
+            sentTab.classList.remove('text-blue-400', 'border-blue-500');
+            
+            // Update sections
+            receivedSection.classList.remove('hidden');
+            sentSection.classList.add('hidden');
+        });
+        
+        sentTab.addEventListener('click', () => {
+            // Update tabs
+            sentTab.classList.add('text-blue-400', 'border-blue-500');
+            sentTab.classList.remove('text-gray-400', 'border-transparent');
+            receivedTab.classList.add('text-gray-400', 'border-transparent');
+            receivedTab.classList.remove('text-blue-400', 'border-blue-500');
+            
+            // Update sections
+            sentSection.classList.remove('hidden');
+            receivedSection.classList.add('hidden');
+        });
+        
+        // Sample function to create received request card
+        function createReceivedRequestCard(request) {
+            const card = document.createElement('div');
+            card.className = 'request-card glass-card rounded-2xl p-6 shadow-xl';
+            
+            const photoUrl = request.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.name)}&background=4A90E2&color=fff`;
+            const skills = request.skills || [];
+            const displaySkills = skills.slice(0, 4);
+            
+            card.innerHTML = `
+                <div class="flex items-start gap-4 mb-4">
+                    <img src="${photoUrl}" alt="${request.name}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-500 shadow-lg">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-white mb-1">${request.name || 'User'}</h3>
+                        <p class="text-sm text-gray-400 mb-2">${request.institution || 'Student'}</p>
+                        ${request.message ? `
+                            <div class="glass-card rounded-lg p-3 mt-3">
+                                <p class="text-xs text-gray-400 mb-1">Message:</p>
+                                <p class="text-sm text-gray-300">${request.message}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 mb-4">
+                    ${displaySkills.map(skill => `
+                        <span class="skill-tag">${skill}</span>
+                    `).join('')}
+                    ${skills.length > 4 ? `
+                        <span class="skill-tag">+${skills.length - 4} more</span>
+                    ` : ''}
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="acceptRequest('${request._id}')" class="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center text-sm font-semibold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-xl">
+                        <i class="fas fa-check mr-2"></i>Accept
+                    </button>
+                    <button onclick="rejectRequest('${request._id}')" class="flex-1 px-6 py-3 glass-card text-red-400 text-center text-sm font-semibold rounded-xl hover:bg-red-500/20 transition-all">
+                        <i class="fas fa-times mr-2"></i>Decline
+                    </button>
+                    <a href="profile-view.html?id=${request.fromUserId}" class="flex-1 px-6 py-3 glass-card text-white text-center text-sm font-semibold rounded-xl hover:bg-white/10 transition-all">
+                        <i class="fas fa-eye mr-2"></i>View Profile
+                    </a>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Sample function to create sent request card
+        function createSentRequestCard(request) {
+            const card = document.createElement('div');
+            card.className = 'request-card glass-card rounded-2xl p-6 shadow-xl';
+            
+            const photoUrl = request.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.name)}&background=4A90E2&color=fff`;
+            const skills = request.skills || [];
+            const displaySkills = skills.slice(0, 4);
+            
+            card.innerHTML = `
+                <div class="flex items-start gap-4 mb-4">
+                    <img src="${photoUrl}" alt="${request.name}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-500 shadow-lg">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-white mb-1">${request.name || 'User'}</h3>
+                        <p class="text-sm text-gray-400 mb-2">${request.institution || 'Student'}</p>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 glass-card rounded-full">
+                            <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                            <span class="text-xs text-yellow-400 font-semibold">Pending</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 mb-4">
+                    ${displaySkills.map(skill => `
+                        <span class="skill-tag">${skill}</span>
+                    `).join('')}
+                    ${skills.length > 4 ? `
+                        <span class="skill-tag">+${skills.length - 4} more</span>
+                    ` : ''}
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="cancelRequest('${request._id}')" class="flex-1 px-6 py-3 glass-card text-red-400 text-center text-sm font-semibold rounded-xl hover:bg-red-500/20 transition-all">
+                        <i class="fas fa-times-circle mr-2"></i>Cancel Request
+                    </button>
+                    <a href="profile-view.html?id=${request.toUserId}" class="flex-1 px-6 py-3 glass-card text-white text-center text-sm font-semibold rounded-xl hover:bg-white/10 transition-all">
+                        <i class="fas fa-eye mr-2"></i>View Profile
+                    </a>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Placeholder functions (your requests.js will handle actual logic)
+        function acceptRequest(requestId) {
+            console.log('Accept request:', requestId);
+        }
+        
+        function rejectRequest(requestId) {
+            console.log('Reject request:', requestId);
+        }
+        
+        function cancelRequest(requestId) {
+            console.log('Cancel request:', requestId);
+        }
+        
+        // Make functions globally available
+        window.acceptRequest = acceptRequest;
+        window.rejectRequest = rejectRequest;
+        window.cancelRequest = cancelRequest;
+        
+        console.log('📬 Requests page loaded');
+    </script>
+</body>
+</html>

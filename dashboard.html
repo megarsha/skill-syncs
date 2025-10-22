@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Skill Sync</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0A1128;
+            color: #E5E7EB;
+            overflow-x: hidden;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0A1128;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4A90E2, #8B5CF6);
+            border-radius: 5px;
+        }
+        
+        .profile-sidebar {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            background: #FFFFFF;
+            box-shadow: -10px 0 50px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+        
+        .profile-sidebar.active {
+            right: 0;
+        }
+        
+        .profile-sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .profile-sidebar::-webkit-scrollbar-track {
+            background: #F3F4F6;
+        }
+        
+        .profile-sidebar::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4A90E2, #8B5CF6);
+            border-radius: 4px;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9998;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .glass-card {
+            background: rgba(17, 27, 71, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .photo-upload-wrapper {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .photo-upload-wrapper:hover .photo-overlay {
+            opacity: 1;
+        }
+        
+        .photo-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .interest-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(74, 144, 226, 0.1);
+            color: #2563EB;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .interest-tag:hover {
+            background: #4A90E2;
+            color: white;
+        }
+        
+        .interest-tag button {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+        }
+        
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(74, 144, 226, 0.3);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #EF4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            border: 2px solid #FFFFFF;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        button, a, input, .hover-lift {
+            transition: all 0.3s ease;
+        }
+        
+        /* WHITE SIDEBAR OVERRIDES */
+        #profile-sidebar {
+            background: #FFFFFF !important;
+        }
+        
+        #profile-sidebar h2,
+        #profile-sidebar h3,
+        #profile-sidebar h4 {
+            color: #111827 !important;
+        }
+        
+        #profile-sidebar label {
+            color: #6B7280 !important;
+        }
+        
+        #profile-sidebar p {
+            color: #9CA3AF !important;
+        }
+        
+        #profile-sidebar input:not([type="file"]),
+        #profile-sidebar textarea {
+            background: #F9FAFB !important;
+            border: 1px solid #E5E7EB !important;
+            color: #111827 !important;
+        }
+        
+        #profile-sidebar input::placeholder,
+        #profile-sidebar textarea::placeholder {
+            color: #9CA3AF !important;
+        }
+        
+        #profile-sidebar .glass-card {
+            background: #F9FAFB !important;
+            border: 1px solid #E5E7EB !important;
+        }
+        
+        #profile-sidebar .sticky {
+            background: #FFFFFF !important;
+            border-color: #E5E7EB !important;
+        }
+        
+        #profile-sidebar button[class*="gradient"] {
+            color: #FFFFFF !important;
+        }
+        
+        #profile-sidebar .fa-whatsapp {
+            color: #22C55E !important;
+        }
+        
+        #profile-sidebar .fa-discord {
+            color: #8B5CF6 !important;
+        }
+        
+        #profile-sidebar .fa-linkedin {
+            color: #3B82F6 !important;
+        }
+        
+        #profile-sidebar .fa-github {
+            color: #6B7280 !important;
+        }
+        
+        #profile-sidebar .fa-globe {
+            color: #10B981 !important;
+        }
+        
+        @media (max-width: 768px) {
+            .profile-sidebar {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    
+    <div id="profile-sidebar" class="profile-sidebar">
+        <div class="sticky top-0 px-6 py-4 flex items-center justify-between z-10" style="border-bottom: 1px solid #E5E7EB;">
+            <h2 class="text-xl font-bold">Edit Profile</h2>
+            <button id="close-sidebar" class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all">
+                <i class="fas fa-times text-gray-600 text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="px-6 py-6 space-y-8">
+            
+            <div class="text-center">
+                <h3 class="text-sm font-semibold mb-4">Profile Photo</h3>
+                <div class="flex flex-col items-center gap-4">
+                    <div class="photo-upload-wrapper">
+                        <img id="sidebar-photo" src="https://ui-avatars.com/api/?name=Student&background=4A90E2&color=fff" alt="Profile" class="w-32 h-32 rounded-full object-cover border-4 border-blue-500">
+                        <div class="photo-overlay">
+                            <i class="fas fa-camera text-white text-2xl"></i>
+                        </div>
+                        <input type="file" id="photo-upload" accept="image/*" class="hidden">
+                    </div>
+                    <div class="flex gap-2 w-full">
+                        <button id="upload-photo-btn" class="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all">
+                            <i class="fas fa-upload mr-2"></i>Upload
+                        </button>
+                        <button id="remove-photo-btn" class="flex-1 px-4 py-2 glass-card text-sm font-semibold rounded-lg transition-all">
+                            <i class="fas fa-trash mr-2"></i>Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-semibold mb-4">Personal Information</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Full Name</label>
+                        <input type="text" id="edit-name" placeholder="Enter your name" class="w-full px-4 py-3 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Email</label>
+                        <input type="email" id="edit-email" readonly class="w-full px-4 py-3 glass-card rounded-lg cursor-not-allowed">
+                        <p class="text-xs mt-1">Email cannot be changed</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Phone Number</label>
+                        <input type="tel" id="edit-phone" placeholder="+91 9876543210" class="w-full px-4 py-3 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Institution</label>
+                        <input type="text" id="edit-institution" placeholder="Your University/College" class="w-full px-4 py-3 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all">
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-semibold mb-4">About</h3>
+                <textarea id="edit-bio" rows="4" placeholder="Tell us about yourself..." maxlength="200" class="w-full px-4 py-3 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all resize-none"></textarea>
+                <p class="text-xs mt-1"><span id="bio-count">0</span>/200 characters</p>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-semibold mb-4">Your Skills</h3>
+                <div id="interests-container" class="flex flex-wrap gap-2 mb-3 min-h-[40px]"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="new-interest" placeholder="Add a skill (e.g., React)" class="flex-1 px-4 py-2 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all text-sm">
+                    <button id="add-interest-btn" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-semibold mb-4">Contact Information</h3>
+                <p class="text-xs mb-3">Visible only to your connections</p>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <i class="fab fa-whatsapp text-xl w-6"></i>
+                        <input type="tel" id="edit-whatsapp" placeholder="+91 9876543210" class="flex-1 px-3 py-2 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all text-sm">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fab fa-discord text-xl w-6"></i>
+                        <input type="text" id="edit-discord" placeholder="username#1234" class="flex-1 px-3 py-2 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all text-sm">
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-semibold mb-4">Social Links</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <i class="fab fa-linkedin text-xl w-6"></i>
+                        <input type="url" id="edit-linkedin" placeholder="https://linkedin.com/in/username" class="flex-1 px-3 py-2 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all text-sm">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fab fa-github text-xl w-6"></i>
+                        <input type="url" id="edit-github" placeholder="https://github.com/username" class="flex-1 px-3 py-2 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all text-sm">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-globe text-xl w-6"></i>
+                        <input type="url" id="edit-portfolio" placeholder="https://yourportfolio.com" class="flex-1 px-3 py-2 glass-card rounded-lg focus:outline-none focus:border-blue-500 transition-all text-sm">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sticky bottom-0 pt-4 pb-6 space-y-3" style="background: linear-gradient(to top, #FFFFFF 90%, transparent);">
+                <button id="save-profile-btn" class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-xl">
+                    <i class="fas fa-save mr-2"></i>Save Changes
+                </button>
+                <button id="sidebar-logout-btn" class="w-full glass-card text-red-600 py-3 rounded-lg font-semibold hover:bg-red-50 transition-all">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    
+    <!-- Header -->
+    <header class="bg-[#0A1128]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="dashboard.html" class="flex items-center gap-2">
+                    <div class="relative w-8 h-8">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg rotate-6"></div>
+                        <div class="absolute inset-0.5 bg-[#0A1128] rounded-md rotate-6"></div>
+                        <div class="absolute inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-sm rotate-6"></div>
+                    </div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Skill Sync</span>
+                </a>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Notification Bell -->
+                    <button class="relative w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all">
+                        <i class="fas fa-bell text-gray-400 text-lg"></i>
+                        <span class="notification-badge" style="display: none;">0</span>
+                    </button>
+                    
+                    <!-- Profile Dropdown -->
+                    <div class="relative">
+                        <button id="profile-btn" class="flex items-center gap-3 hover:bg-white/5 px-3 py-2 rounded-lg transition-all">
+                            <img id="user-photo" src="https://ui-avatars.com/api/?name=Student&background=4A90E2&color=fff" alt="Profile" class="w-9 h-9 rounded-full object-cover border-2 border-blue-500">
+                            <div class="hidden lg:block text-left">
+                                <p class="text-sm font-semibold text-white" id="user-name-header">Student</p>
+                                <p class="text-xs text-gray-400">Profile</p>
+                            </div>
+                            <i class="fas fa-chevron-down text-xs text-gray-400 hidden lg:block"></i>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-64 glass-card rounded-xl shadow-2xl py-2 z-50">
+                            <div class="px-4 py-3 border-b border-white/10">
+                                <p class="text-sm font-semibold text-white" id="user-name-dropdown">Student</p>
+                                <p class="text-xs text-gray-400" id="user-email-dropdown">user@email.com</p>
+                            </div>
+                            
+                            <button id="open-profile-btn" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all text-left">
+                                <div class="w-9 h-9 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-user text-blue-400"></i>
+                                </div>
+                                <span class="text-sm font-medium text-gray-300">Edit Profile</span>
+                            </button>
+                            
+                            <a href="connections.html" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all">
+                                <div class="w-9 h-9 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-users text-green-400"></i>
+                                </div>
+                                <span class="text-sm font-medium text-gray-300">My Connections</span>
+                            </a>
+                            
+                            <a href="requests.html" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all">
+                                <div class="w-9 h-9 bg-orange-500/20 rounded-lg flex items-center justify-center relative">
+                                    <i class="fas fa-inbox text-orange-400"></i>
+                                    <span class="notification-badge" style="display: none;">0</span>
+                                </div>
+                                <span class="text-sm font-medium text-gray-300">Pending Requests</span>
+                            </a>
+                            
+                            <div class="border-t border-white/10 my-2"></div>
+                            
+                            <button id="logout-btn" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 transition-all text-left">
+                                <div class="w-9 h-9 bg-red-500/20 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-sign-out-alt text-red-400"></i>
+                                </div>
+                                <span class="text-sm font-medium text-red-400">Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-6 mb-8">
+            <!-- My Connections -->
+            <a href="connections.html" class="glass-card rounded-2xl p-6 hover-lift cursor-pointer">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-users text-white text-xl"></i>
+                    </div>
+                    <span class="text-3xl font-bold text-white connections-count">0</span>
+                </div>
+                <p class="text-sm text-gray-300 font-semibold">My Connections</p>
+                <p class="text-xs text-gray-500 mt-1">View all connections</p>
+            </a>
+            
+            <!-- Pending Requests -->
+            <a href="requests.html" class="glass-card rounded-2xl p-6 hover-lift cursor-pointer relative">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg relative">
+                        <i class="fas fa-inbox text-white text-xl"></i>
+                        <span class="notification-badge" style="display: none;">0</span>
+                    </div>
+                    <span class="text-3xl font-bold text-white pending-requests-count">0</span>
+                </div>
+                <p class="text-sm text-gray-300 font-semibold">Pending Requests</p>
+                <p class="text-xs text-gray-500 mt-1">New collaboration requests</p>
+            </a>
+        </div>
+        
+        <!-- Glassmorphism Search Section -->
+        <div class="mb-8">
+            <div class="relative overflow-hidden rounded-3xl glass-card p-8 shadow-2xl">
+                <!-- Background decoration -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl"></div>
+                
+                <div class="relative z-10">
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-white mb-2">
+                            <i class="fas fa-search text-blue-400 mr-2"></i>
+                            Find Your Perfect Teammate
+                        </h2>
+                        <p class="text-gray-400">Search students by skills and start collaborating</p>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="flex flex-col sm:flex-row gap-3 max-w-3xl mx-auto">
+                        <div class="relative flex-1 group">
+                            <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-blue-400 text-lg z-10"></i>
+                            <input 
+                                type="text" 
+                                id="search-input"
+                                placeholder="Type skills like React, Python, UI/UX..." 
+                                class="w-full h-14 pl-14 pr-12 glass-card rounded-2xl text-base text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            >
+                            <button id="clear-search" class="hidden absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/10 hover:bg-white/20 rounded-full items-center justify-center transition-all z-10">
+                                <i class="fas fa-times text-gray-400 text-xs"></i>
+                            </button>
+                        </div>
+                        <button id="search-btn" class="h-14 px-8 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-2xl font-semibold transition-all shadow-xl whitespace-nowrap">
+                            <i class="fas fa-search mr-2"></i>Search
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Search Suggestions -->
+                    <div class="flex flex-wrap justify-center gap-2 mt-5">
+                        <span class="text-xs text-gray-500 font-medium">Popular:</span>
+                        <button class="text-xs px-3 py-1.5 glass-card text-blue-400 rounded-full font-medium transition-all hover:bg-white/10 quick-search" data-query="React">
+                            React
+                        </button>
+                        <button class="text-xs px-3 py-1.5 glass-card text-purple-400 rounded-full font-medium transition-all hover:bg-white/10 quick-search" data-query="Python">
+                            Python
+                        </button>
+                        <button class="text-xs px-3 py-1.5 glass-card text-pink-400 rounded-full font-medium transition-all hover:bg-white/10 quick-search" data-query="UI/UX">
+                            UI/UX
+                        </button>
+                        <button class="text-xs px-3 py-1.5 glass-card text-orange-400 rounded-full font-medium transition-all hover:bg-white/10 quick-search" data-query="Node.js">
+                            Node.js
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Filter Skills -->
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-white mb-4">Filter by Skills</h2>
+            <div class="flex gap-2 overflow-x-auto pb-2">
+                <button class="skill-filter-btn px-5 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-semibold whitespace-nowrap hover:bg-blue-600 transition-all shadow-md" data-skill="all">
+                    All Students
+                </button>
+                <button class="skill-filter-btn px-5 py-2.5 glass-card text-gray-300 rounded-xl text-sm font-semibold hover:bg-white/10 whitespace-nowrap transition-all" data-skill="React">
+                    React
+                </button>
+                <button class="skill-filter-btn px-5 py-2.5 glass-card text-gray-300 rounded-xl text-sm font-semibold hover:bg-white/10 whitespace-nowrap transition-all" data-skill="Node.js">
+                    Node.js
+                </button>
+                <button class="skill-filter-btn px-5 py-2.5 glass-card text-gray-300 rounded-xl text-sm font-semibold hover:bg-white/10 whitespace-nowrap transition-all" data-skill="Python">
+                    Python
+                </button>
+                <button class="skill-filter-btn px-5 py-2.5 glass-card text-gray-300 rounded-xl text-sm font-semibold hover:bg-white/10 whitespace-nowrap transition-all" data-skill="UI/UX">
+                    UI/UX
+                </button>
+                <button class="skill-filter-btn px-5 py-2.5 glass-card text-gray-300 rounded-xl text-sm font-semibold hover:bg-white/10 whitespace-nowrap transition-all" data-skill="MongoDB">
+                    MongoDB
+                </button>
+                <button class="skill-filter-btn px-5 py-2.5 glass-card text-gray-300 rounded-xl text-sm font-semibold hover:bg-white/10 whitespace-nowrap transition-all" data-skill="Java">
+                    Java
+                </button>
+            </div>
+        </div>
+        
+        <!-- Student Profiles -->
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-2xl font-bold text-white">
+                    <span id="results-title">Suggested Students</span>
+                    <span id="results-count" class="text-base font-normal text-gray-500"></span>
+                </h2>
+                <a href="search.html" class="text-blue-400 text-sm font-semibold hover:text-blue-300 flex items-center gap-1 transition-all">
+                    View All
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+            
+            <!-- Loading -->
+            <div id="loading-students" class="hidden text-center py-16">
+                <div class="inline-block">
+                    <div class="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                </div>
+                <p class="text-gray-400 mt-4 font-medium">Finding skilled students...</p>
+            </div>
+            
+            <!-- Students Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="students-grid">
+                <!-- Students loaded dynamically -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="empty-profile" class="hidden text-center py-20">
+                <div class="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <i class="fas fa-user-edit text-blue-400 text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-3">Complete Your Profile First!</h3>
+                <p class="text-gray-400 mb-8 max-w-md mx-auto">Add your skills to discover and connect with other talented students</p>
+                <button onclick="document.getElementById('open-profile-btn').click()" class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-2xl font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-xl">
+                    <i class="fas fa-user-edit"></i>
+                    Complete Profile Now
+                </button>
+            </div>
+            
+            <!-- No Students -->
+            <div id="no-students" class="hidden text-center py-20">
+                <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-users-slash text-gray-600 text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-3">No Students Found</h3>
+                <p class="text-gray-400 max-w-md mx-auto">Try searching with different skills or check back later</p>
+            </div>
+        </div>
+        
+    </main>
+    
+    <script src="dashboard.js"></script>
+</body>
+</html>
